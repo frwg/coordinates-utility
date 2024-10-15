@@ -61,20 +61,19 @@ class SrsListType extends AbstractType implements DataTransformerInterface
         }
         $parts = array();
         foreach ($value as $srsInfo) {
-            if (!empty($srsInfo['title'])) {
-                $parts[] = "{$srsInfo['name']} | {$srsInfo['title']}";
+            $name = $srsInfo['name'];
+            $title = !empty($srsInfo['title']) ? $srsInfo['title'] : '';
+            $axisOrder = isset($srsInfo['axisOrder']) ? $srsInfo['axisOrder'] : 'lonlat';  // default axis order
+
+            if (!empty($title)) {
+                $parts[] = "{$name} | {$title} | {$axisOrder}";
             } else {
-                $parts[] = $srsInfo['name'];
+                $parts[] = "{$name} | {$axisOrder}";
             }
         }
         return implode(', ', $parts);
     }
 
-    /**
-     * Transform view data to norm data
-     * @param mixed $value
-     * @return mixed|void
-     */
     public function reverseTransform($value)
     {
         if (!$value) {
@@ -86,17 +85,16 @@ class SrsListType extends AbstractType implements DataTransformerInterface
         $inputs = array_filter(array_map('\trim', explode(',', $value)), '\strlen');
         $srsDefs = array();
         foreach ($inputs as $srsInput) {
-            $srsInputParts = explode('|', $srsInput, 2);
+            $srsInputParts = explode('|', $srsInput, 3);
             $srsName = trim($srsInputParts[0]);
-            if (count($srsInputParts) === 2) {
-                $srsTitle = trim($srsInputParts[1]) ?: '';
-            } else {
-                $srsTitle = '';
-            }
+            $srsTitle = isset($srsInputParts[1]) ? trim($srsInputParts[1]) : '';
+            $axisOrder = isset($srsInputParts[2]) ? trim($srsInputParts[2]) : 'lonlat';  // default to lonlat
+
             if (!empty($srsName)) {
                 $srsDefs[] = array(
                     'name' => $srsName,
                     'title' => $srsTitle,
+                    'axisOrder' => $axisOrder,
                 );
             }
         }

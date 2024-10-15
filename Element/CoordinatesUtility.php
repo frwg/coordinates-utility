@@ -128,40 +128,46 @@ class CoordinatesUtility extends AbstractElementService implements ConfigMigrati
             } elseif (empty($srsList[$key]['title'])) {
                 $srsList[$key]['title'] = $srsList[$key]['name'];
             }
+
+            // Ensure axisOrder is set, with default being 'lonlat'
+            if (empty($srsList[$key]['axisOrder'])) {
+                $srsList[$key]['axisOrder'] = 'lonlat';
+            }
         }
 
         return $srsList;
     }
 
-    /**
-     * @param mixed[] $srsList strings or arrays
-     * @return mixed[][]
-     */
+
     protected function normalizeSrsList($srsList)
     {
-        // Tolerate both arrays + scalars
-        /** @see Type\CoordinatesUtilityAdminType::reverseTransform */
         foreach ($srsList as $k => $srsSpec) {
             if (\is_string($srsSpec)) {
-                $parts = explode('|', $srsSpec, 2);
+                $parts = explode('|', $srsSpec, 3);  // Now expecting up to 3 parts (name, title, axisOrder)
                 $name = trim($parts[0]);
                 $title = (count($parts) > 1) ? $parts[1] : null;
+                $axisOrder = (count($parts) > 2) ? $parts[2] : 'lonlat';  // Default axisOrder to 'lonlat'
             } else {
                 $name = $srsSpec['name'];
                 $title = !empty($srsSpec['title']) ? $srsSpec['title'] : null;
+                $axisOrder = !empty($srsSpec['axisOrder']) ? $srsSpec['axisOrder'] : 'lonlat';  // Default axisOrder
             }
             $srsList[$k] = array(
                 'name' => $name,
                 'title' => trim($title) ?: null,
+                'axisOrder' => $axisOrder,  // Add axisOrder to the normalized structure
             );
         }
+
         foreach ($srsList as $k => $srsSpec) {
             if (empty($srsSpec['name'])) {
                 unset($srsList[$k]);
             }
         }
+
         return \array_values($srsList);
     }
+
 
     /**
      * @param $srsList

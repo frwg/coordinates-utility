@@ -139,9 +139,13 @@
             });
         },
 
-        /** Override **/
-        _isLonLatReversed: function (srs) {
-           return false;
+        _isLonLatReversed: function (srsName) {
+            var srsList = this.options.srsList || [];
+            var selectedSrs = srsList.find(function (srs) {
+                return srs.name === srsName;
+            });
+
+            return selectedSrs && selectedSrs.axisOrder === 'latlon';
         },
 
         popup: function () {
