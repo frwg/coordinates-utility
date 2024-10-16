@@ -90,7 +90,9 @@
                     return;
                 }
                 dropdown.append(srsList.map(function (srs) {
-                    return $('<option>').val(srs.name).text(srs.title || srs.name);
+                    var option = $('<option>').val(srs.name).text(srs.title || srs.name);
+                    option.data('axisOrder', srs.axisOrder || 'lonlat'); // Add axisOrder as a data-attribute
+                    return option;
                 }));
             }
             var $wrapper = dropdown.parent('.dropdown');
@@ -128,24 +130,34 @@
         _setupEventListeners: function () {
             var widget = this;
             $(document).on('mbmapsrschanged', $.proxy(widget._resetFields, widget));
+
+            // Handle SRS dropdown change event
             $('select.srs', this.element).on('change', function () {
-                widget.lonLatReversed = widget._isLonLatReversed($(this).val());
-                $('input.input-coordinate', widget.element).attr("placeholder", widget.lonLatReversed ? "latitude / longitude" : "longitude / latitude");
+                var selectedOption = $(this).find('option:selected');
+
+                // Update lonLatReversed depending on axisOrder data attribute
+                widget.lonLatReversed = selectedOption.data('axisOrder') === 'latlon';
+
+                // Update placeholder text based on axisOrder
+                $('input.input-coordinate', widget.element)
+                    .attr("placeholder", widget.lonLatReversed ? "latitude / longitude" : "longitude / latitude");
+
                 widget._recalculateDisplayCoordinate($(this).val());
             });
+
+            // Handle coordinate input change event
             $('input.input-coordinate', widget.element).on('change', $.proxy(widget._transformCoordinateToMapSrs, widget));
+
+            // Handle map click event
             this.mbMap.element.on('mbmapclick', function (event, data) {
                 widget._mapClick(event, data);
             });
         },
 
-        _isLonLatReversed: function (srsName) {
-            var srsList = this.options.srsList || [];
-            var selectedSrs = srsList.find(function (srs) {
-                return srs.name === srsName;
-            });
-
-            return selectedSrs && selectedSrs.axisOrder === 'latlon';
+        _isLonLatReversed: function (srsIdentifier) {
+            var dropdown = $('select.srs', this.element);
+            var selectedOption = dropdown.find('option[value="' + srsIdentifier + '"]');
+            return selectedOption.data('axisOrder') === 'latlon';
         },
 
         popup: function () {
@@ -224,11 +236,15 @@
             var mapSrs = this.mbMap.getModel().getCurrentProjectionCode();
             this.currentMapCoordinate = this._formatOutputString(x, y, mapSrs);
 
-            var selectedSrs = $('select.srs', this.element).val();
-            if (selectedSrs) {
-                if (selectedSrs !== mapSrs) {
-                    var transformed = this._transformCoordinate(x, y, selectedSrs, mapSrs);
-                    this.transformedCoordinate = this.lonLatReversed ? this._formatOutputString(transformed.y, transformed.x, selectedSrs) : this._formatOutputString(transformed.x, transformed.y, selectedSrs);
+            var selectedSrsIdentifier = $('select.srs', this.element).val();
+            if (selectedSrsIdentifier) {
+                if (selectedSrsIdentifier !== mapSrs) {
+                    var transformed = this._transformCoordinate(x, y, selectedSrsIdentifier, mapSrs);
+
+                    // Apply lonLatReversed to swap coordinates if necessary
+                    this.transformedCoordinate = this.lonLatReversed
+                        ? this._formatOutputString(transformed.y, transformed.x, selectedSrsIdentifier)
+                        : this._formatOutputString(transformed.x, transformed.y, selectedSrsIdentifier);
                 } else {
                     this.transformedCoordinate = this.currentMapCoordinate;
                 }

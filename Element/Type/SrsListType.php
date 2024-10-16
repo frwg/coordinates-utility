@@ -51,6 +51,7 @@ class SrsListType extends AbstractType implements DataTransformerInterface
      * @param mixed $value
      * @return mixed|void
      */
+
     public function transform($value)
     {
         if (!$value) {
@@ -63,12 +64,13 @@ class SrsListType extends AbstractType implements DataTransformerInterface
         foreach ($value as $srsInfo) {
             $name = $srsInfo['name'];
             $title = !empty($srsInfo['title']) ? $srsInfo['title'] : '';
-            $axisOrder = isset($srsInfo['axisOrder']) ? $srsInfo['axisOrder'] : 'lonlat';  // default axis order
+            $axisOrder = isset($srsInfo['axisOrder']) ? $srsInfo['axisOrder'] : 'lonlat';  // Default axis order
 
-            if (!empty($title)) {
+            // Only append axisOrder if it's not "lonlat"
+            if ($axisOrder !== 'lonlat') {
                 $parts[] = "{$name} | {$title} | {$axisOrder}";
             } else {
-                $parts[] = "{$name} | {$axisOrder}";
+                $parts[] = "{$name} | {$title}";
             }
         }
         return implode(', ', $parts);
